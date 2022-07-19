@@ -1,0 +1,33 @@
+#/bin/bash
+echo "remove_ceph"
+echo "Do you wish to remove Ceph on $1? This will purge ceph\* in your system"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+echo "Removing Ceph on $1..."
+sleep 2
+
+echo -n "Stopping monitors..."
+sleep 2 && echo "done"
+ssh $1 "systemctl stop ceph-mon@$1 && systemctl disable ceph-mon@$1"
+
+echo -n "Umounting osd..."
+sleep 2 && echo "done"
+ssh $1 "umount -l /var/lib/ceph/osd/ceph-*"
+
+echo -n "Removing /etc/ceph and /var/lib/ceph..."
+sleep 2 && echo "done"
+ssh $1 "rm -rf /etc/ceph && rm -rf /var/lib/ceph"
+ssh $1 "rm -r /dev/ceph-*"
+
+echo -n "Removing ceph packages..."
+sleep 2 && echo "done"
+ssh $1 "apt purge -y ceph\*"
+#ssh $1 "apt -y autoremove"
+
+echo " "
+echo "Ceph removed. Please restart $1"

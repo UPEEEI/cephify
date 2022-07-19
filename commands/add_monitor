@@ -1,0 +1,92 @@
+#/bin/bash
+echo "add_monitor"
+echo "Do you want to create a Ceph monitor on $1? Make sure a cluster already exists"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+conf_loc=$(find /etc/ceph/ -type f -name "*conf")
+cluster_name=$(basename -a -s ".conf" $conf_loc)
+
+echo "Checking if monitor $1 already exists..."
+sleep 2
+grep -q "mon.$1" "$conf_loc"
+if [ $? == 0 ]; then
+   echo "$1 is already in cluster $cluster_name. Exiting..."
+   sleep 1
+   exit
+fi
+
+echo "Adding new monitor entry on $cluster_name.conf..."
+sleep 1
+
+clientip=$(ssh -G $1 | awk '/^hostname /' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
+
+echo "Adding new monitor IP on mon hosts..."
+sleep 1
+init_mon=$(grep "mon host" /etc/ceph/$cluster_name.conf)
+sed -i "/$init_mon/c $init_mon,$clientip" /etc/ceph/$cluster_name.conf
+
+
+echo " " | tee -a $conf_loc
+echo "[mon.$1]" | tee -a $conf_loc
+
+echo "host = $1" | tee -a $conf_loc
+
+echo "mon addr = $clientip" | tee -a $conf_loc
+
+echo "mon allow pool delete = true" | tee -a $conf_loc
+
+echo " "
+echo "mon.$1 added to $cluster_name.conf"
+sleep 1
+
+echo "Installing Ceph on $1..."
+sleep 1
+
+ssh $1 "apt update; apt -y install ceph"
+
+echo "Transferring required files..."
+sleep 1
+
+scp /etc/ceph/$cluster_name.conf $1:/etc/ceph/$cluster_name.conf
+scp /etc/ceph/$cluster_name.mon.keyring $1:/etc/ceph
+scp /etc/ceph/$cluster_name.client.admin.keyring $1:/etc/ceph
+scp /etc/ceph/monmap $1:/etc/ceph
+
+ssh $1 "rm -rf /var/lib/ceph/mon/$cluster_name-$1"
+ssh $1 "mkdir /var/lib/ceph/mon/$cluster_name-$1"
+ssh $1 "systemctl stop $cluster_name-mon@*"
+#Remove existing/leftover asok files
+#echo "Remove existing/leftover asok files, if there are any..."
+#ssh $1 "rm -rf /var/run/ceph/ceph-mon.$1.asok"
+
+echo "Retrieving monitor key and monitor map..."
+sleep 1
+ssh $1 "ceph auth get mon. -o /etc/ceph/$cluster_name.mon.keyring"
+ssh $1 "ceph mon getmap -o /etc/ceph/monmap"
+
+echo "Preparing the monitor's data directory.."
+sleep 1
+ssh $1 "ceph-mon -i $1 --mkfs --monmap /etc/ceph/monmap --keyring /etc/ceph/$cluster_name.mon.keyring"
+
+ssh $1 "chown ceph. /etc/ceph/$cluster_name.*"
+ssh $1 "chown -R ceph. /var/lib/ceph/mon/$cluster_name-$1"
+
+echo "Starting the new monitor..."
+sleep 1
+ssh $1 "ceph-mon -i $1 --public-addr $clientip"
+
+echo "Enabling Messenger v2 Protocol..."
+sleep 1
+ssh $1 "ceph mon enable-msgr2"
+ssh $1 "ceph -s"
+
+echo "Adding cron entry..."
+ssh $1 "echo "@reboot root ceph-mon -i $1 --public-addr $clientip" >> /etc/crontab"
+
+ssh $1 "$1 added to @cluster_name"
+echo "If you received Bind address failed address already in use, use netstat to see the process and kill it -- or you may just reboot $1"

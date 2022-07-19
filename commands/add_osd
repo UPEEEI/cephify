@@ -1,0 +1,58 @@
+#/bin/bash
+echo "add_osd"
+echo "Do you want to create a Ceph OSD on $1? Make sure a cluster already exists."
+echo "IMPORTANT! Before starting please run: sgdisk --zap-all /dev/disk on $1, then reboot"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+conf_loc=$(find /etc/ceph/ -type f -name "*conf")
+cluster_name=$(basename -a -s ".conf" $conf_loc)
+
+echo "Installing Ceph on $1..."
+sleep 1
+
+ssh $1 "apt update; apt -y install ceph"
+
+echo "Transferring required files..."
+sleep 1
+
+scp /etc/ceph/$cluster_name.conf $1:/etc/ceph/$cluster_name.conf
+scp /etc/ceph/$cluster_name.client.admin.keyring $1:/etc/ceph
+scp /var/lib/ceph/bootstrap-osd/$cluster_name.keyring $1:/var/lib/ceph/bootstrap-osd
+
+ssh $1 "chown ceph. /etc/ceph/ceph.* /var/lib/ceph/bootstrap-osd/*"
+
+ssh $1 "lsblk"
+sleep 1
+
+read -p "Enter disk location [ex. /dev/sdb]: " disk_loc
+#disk_loc="/dev/vdb"
+echo "Are you sure you want to use disk $disk_loc? This will wipe all the data on $disk_loc"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+
+ssh $1 "chown ceph. /etc/ceph/ceph.* /var/lib/ceph/bootstrap-osd/*"
+
+ssh $1 "ceph-volume lvm zap $disk_loc"
+
+ssh $1 "parted --script $disk_loc mklabel gpt"
+
+ssh $1 "parted --script $disk_loc mkpart primary 0% 100%"
+
+ssh $1 "parted --script $disk_loc print"
+
+ssh $1 "blkid $disk_loc'1'"
+
+ssh $1 "ceph-volume lvm create --data $disk_loc'1'"
+
+ssh $1 "ceph -s"
+ssh $1 "$1 osd added to $cluster_name"

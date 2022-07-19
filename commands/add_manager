@@ -1,0 +1,38 @@
+#/bin/bash
+echo "add_manager"
+echo "Do you want to create a Ceph manager on $1? Make sure a cluster already exists and Monitor is already installed"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+conf_loc=$(find /etc/ceph/ -type f -name "*conf")
+cluster_name=$(basename -a -s ".conf" $conf_loc)
+
+echo "Installing Ceph on $1..."
+sleep 1
+
+ssh $1 "apt update; apt -y install ceph"
+
+ssh $1 "systemctl stop $cluster_name-mgr@*"
+ssh $1 "rm -rf /var/lib/ceph/mgr/$cluster_name-$1"
+ssh $1 "mkdir /var/lib/ceph/mgr/$cluster_name-$1"
+
+echo "Creating authentication of manager daemon..."
+sleep 1
+ssh $1 "ceph auth get-or-create mgr.$1 mon 'allow profile mgr' osd 'allow *' mds 'allow *'"
+
+ssh $1 "ceph auth get-or-create mgr.$1 | tee /etc/ceph/$cluster_name.mgr.admin.keyring"
+ssh $1 "cp /etc/ceph/$cluster_name.mgr.admin.keyring /var/lib/ceph/mgr/$cluster_name-$1/keyring"
+ssh $1 "chown ceph. /etc/ceph/$cluster_name.mgr.admin.keyring"
+ssh $1 "chown -R ceph. /var/lib/ceph/mgr/$cluster_name-$1"
+
+echo "Adding cron entry..."
+ssh $1 "echo "@reboot root ceph-mgr -i $1" >> /etc/crontab"
+
+echo "Starting the ceph-mgr daemon..."
+sleep 1
+ssh $1 "ceph-mgr -i $1"
+ssh $1 "ceph -s"
