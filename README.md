@@ -1,0 +1,2 @@
+# cephify
+Simplified Ceph Deployment
