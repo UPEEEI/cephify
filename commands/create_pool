@@ -1,0 +1,27 @@
+#/bin/bash
+echo "create_pool"
+echo "Do you want to create pool? Make sure a cluster already exists and there are at least 3 OSDs"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+conf_loc=$(find /etc/ceph/ -type f -name "*conf")
+cluster_name=$(basename -a -s ".conf" $conf_loc)
+
+read -p "Enter Pool name [no space]: " pool_name
+
+echo "Creating RBD pool..."
+sleep 1
+ssh $1 "ceph osd pool create $pool_name 128"
+
+echo "Enabling Placement Groups auto scale mode..."
+sleep 1
+ssh $1 "ceph osd pool set $pool_name pg_autoscale_mode on"
+
+echo "Initializing the pool..."
+ssh $1 "rbd pool init $pool_name"
+
+ssh $1 "ceph osd pool autoscale-status"

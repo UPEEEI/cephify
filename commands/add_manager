@@ -13,8 +13,11 @@ cluster_name=$(basename -a -s ".conf" $conf_loc)
 
 echo "Installing Ceph on $1..."
 sleep 1
-
 ssh $1 "apt update; apt -y install ceph"
+
+echo "Transferring required files..."
+scp /etc/ceph/$cluster_name.conf $1:/etc/ceph/$cluster_name.conf
+scp /etc/ceph/$cluster_name.client.admin.keyring $1:/etc/ceph
 
 ssh $1 "systemctl stop $cluster_name-mgr@*"
 ssh $1 "rm -rf /var/lib/ceph/mgr/$cluster_name-$1"

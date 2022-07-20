@@ -1,0 +1,46 @@
+#/bin/bash
+echo "create_block"
+echo "Do you want to create a block device? Make sure a cluster already exists, there are at least 3 OSDs and a pool already exists"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+conf_loc=$(find /etc/ceph/ -type f -name "*conf")
+cluster_name=$(basename -a -s ".conf" $conf_loc)
+
+echo "Listing all pools:"
+ssh $1 "ceph osd lspools"
+
+read -p "Enter the pool you want to create a block [ex. rbd]: " pool_name
+
+read -p "Enter block name [ex. student]: " block_name
+
+read -p "Enter block device size (in Gigabytes) [ex. 10G]: " block_size
+
+echo "Creating a block device..."
+sleep 1
+
+ssh $1 "rbd create --size $block_size --pool $pool_name $block_name"
+
+echo "Confirming..."
+sleep 1
+ssh $1 "rbd ls -l $pool_name"
+
+echo "Mapping the block device..."
+sleep 1
+ssh $1 "rbd map $pool_name/$block_name"
+
+echo "Confirming..."
+sleep 1
+ssh $1 "rbd showmapped"
+
+echo "Formatiing with XFS..."
+sleep 1
+ssh $1 "mkfs.xfs /dev/rbd0"
+
+echo "Unmapping..."
+sleep 1
+ssh $1 "rbd unmap $pool_name/$block_name"

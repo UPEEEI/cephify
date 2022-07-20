@@ -1,0 +1,70 @@
+#/bin/bash
+echo "add_client"
+echo "Do you want to create a Ceph client on $1? Make sure a cluster already exists"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+conf_loc=$(find /etc/ceph/ -type f -name "*conf")
+cluster_name=$(basename -a -s ".conf" $conf_loc)
+
+echo "Installing Ceph on $1..."
+sleep 1
+#ssh $1 "apt update; apt -y install ceph"
+
+echo "Transferring required files..."
+sleep 1
+
+scp /etc/ceph/$cluster_name.conf $1:/etc/ceph/$cluster_name.conf
+scp /etc/ceph/$cluster_name.client.admin.keyring $1:/etc/ceph
+ssh $1 "chown ceph. /etc/ceph/ceph.*"
+
+echo "Ceph client added on $1"
+sleep 1
+echo "Do you want to mount RBD (block device) on $1? Run create_pool and create_block command to create a pool and block respectively"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+echo "Listing all pools:"
+ssh $1 "ceph osd lspools"
+
+read -p "Enter the pool you want to use [ex. rbd]: " pool_name
+
+ssh $1 "rbd ls -l $pool_name"
+
+read -p "Enter block you want to use [ex. student]: " block_name
+
+echo "Mapping the block device..."
+sleep 1
+ssh $1 "rbd map $pool_name/$block_name"
+
+echo "Confirming..."
+sleep 1
+ssh $1 "rbd showmapped"
+
+read -p "Enter location you want to mount [ex. /mnt]: " mount
+
+echo "Mounting block device..."
+sleep 1
+ssh $1 "umount -l $mount"
+ssh $1 "mount /dev/rbd0 $mount"
+
+ssh $1 "df -hT"
+
+echo "Mapping RBD device at boot time..."
+sleep 1
+ssh $1 "echo "$pool_name/$block_name   id=admin,keyring=/etc/ceph/$cluster_name.client.admin.keyring" >> /etc/ceph/rbdmap"
+
+echo "Mapping corresponding /etc/fstab entries..."
+sleep 1
+ssh $1 "echo "/dev/rbd0 $mount xfs noauto 0 0" >> /etc/fstab"
+
+ssh $1 "systemctl enable rbdmap"
+ssh $1 "systemctl start rbdmap"
