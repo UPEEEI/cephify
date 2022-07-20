@@ -9,11 +9,14 @@ select yn in "Yes" "No"; do
 done
 
 echo "Removing Ceph on $1..."
-sleep 2
+sleep 1
 
-echo -n "Stopping monitors..."
-sleep 2 && echo "done"
+echo -n "Stopping ceph daemons..."
+sleep 1 && echo "done"
 ssh $1 "systemctl stop ceph-mon@$1 && systemctl disable ceph-mon@$1"
+ssh $1 "systemctl stop ceph-mgr@$1 && systemctl disable ceph-mgr@$1"
+ssh $1 "kill -9 $(pidof ceph-mgr)"
+ssh $1 "kill -9 $(pidof ceph-mon)"
 
 echo -n "Umounting osd..."
 sleep 2 && echo "done"

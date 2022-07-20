@@ -24,7 +24,7 @@ ssh $1 "chown ceph. /etc/ceph/ceph.*"
 
 echo "Ceph client added on $1"
 sleep 1
-echo "Do you want to mount RBD (block device) on $1? Run create_pool and create_block command to create a pool and block respectively"
+echo "Do you want to mount RBD (block device) on $1? Requires pools and blocks. Run create_pool and create_block command to create a pool and block respectively"
 select yn in "Yes" "No"; do
     case $yn in
         Yes ) break;;

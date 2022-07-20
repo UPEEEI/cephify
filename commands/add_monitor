@@ -15,7 +15,7 @@ echo "Checking if monitor $1 already exists..."
 sleep 2
 grep -q "mon.$1" "$conf_loc"
 if [ $? == 0 ]; then
-   echo "$1 is already in cluster $cluster_name. Exiting..."
+   echo "$1 is already in cluster $cluster_name. If you want to add monitor $1 again, remove the corresponding entries from your master copy of ceph.conf: mon.$1 and IP address from mon host. Exiting..."
    sleep 1
    exit
 fi
@@ -31,7 +31,7 @@ init_mon=$(grep "mon host" /etc/ceph/$cluster_name.conf)
 sed -i "/$init_mon/c $init_mon,$clientip" /etc/ceph/$cluster_name.conf
 
 
-echo " " | tee -a $conf_loc
+echo "" | tee -a $conf_loc
 echo "[mon.$1]" | tee -a $conf_loc
 
 echo "host = $1" | tee -a $conf_loc
@@ -40,14 +40,13 @@ echo "mon addr = $clientip" | tee -a $conf_loc
 
 echo "mon allow pool delete = true" | tee -a $conf_loc
 
-echo " "
 echo "mon.$1 added to $cluster_name.conf"
 sleep 1
 
 echo "Installing Ceph on $1..."
 sleep 1
 
-ssh $1 "apt update; apt -y install ceph"
+#ssh $1 "apt update; apt -y install ceph"
 
 echo "Transferring required files..."
 sleep 1
@@ -59,7 +58,13 @@ scp /etc/ceph/monmap $1:/etc/ceph
 
 ssh $1 "rm -rf /var/lib/ceph/mon/$cluster_name-$1"
 ssh $1 "mkdir /var/lib/ceph/mon/$cluster_name-$1"
+
+echo "Stopping monitor $1, if there are any..."
+sleep 1
+ssh $1 "kill -9 $(pidof ceph-mon)"
 ssh $1 "systemctl stop $cluster_name-mon@*"
+
+
 #Remove existing/leftover asok files
 #echo "Remove existing/leftover asok files, if there are any..."
 #ssh $1 "rm -rf /var/run/ceph/ceph-mon.$1.asok"
@@ -88,5 +93,5 @@ ssh $1 "ceph -s"
 echo "Adding cron entry..."
 ssh $1 "echo "@reboot root ceph-mon -i $1 --public-addr $clientip" >> /etc/crontab"
 
-ssh $1 "$1 added to @cluster_name"
+echo "$1 added to $cluster_name"
 echo "If you received Bind address failed address already in use, use netstat to see the process and kill it -- or you may just reboot $1"

@@ -43,7 +43,7 @@ ssh $1 "echo "mon initial members = $1" | tee -a $conf_loc"
 
 ssh $1 "echo "osd pool default crush rule = -1" | tee -a $conf_loc"
 
-ssh $1 "echo " " | tee -a $conf_loc"
+ssh $1 "echo "" | tee -a $conf_loc"
 
 ssh $1 "echo '[mon.$1]' | tee -a $conf_loc"
 
