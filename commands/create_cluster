@@ -115,14 +115,14 @@ ssh $1 "apt -y install ceph-mgr-dashboard"
 ssh $1 "ceph mgr module enable dashboard --force"
 ssh $1 "ceph mgr module ls | grep -A 5 enabled_modules"
 
-echo "Create self-signed certificate..."
-sleep 1
-ssh $1 "ceph dashboard create-self-signed-cert"
-
 ssh $1 "echo admin123 > password.txt"
 echo "Creating a user for Dashboard...user:admin, password: admin123"
 sleep 1
 ssh $1 "ceph dashboard ac-user-create admin -i password.txt administrator"
+
+echo "Create self-signed certificate..."
+sleep 1
+ssh $1 "ceph dashboard create-self-signed-cert"
 
 echo "Confirm dashboard services"
 sleep 1
