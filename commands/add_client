@@ -51,6 +51,10 @@ ssh $1 "rbd showmapped"
 
 read -p "Enter location you want to mount [ex. /mnt]: " mount
 
+echo "Creating mount location, if it does not exists..."
+sleep 1
+ssh $1 "mkdir $mount"
+
 echo "Mounting block device..."
 sleep 1
 ssh $1 "umount -l $mount"
