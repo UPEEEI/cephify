@@ -1,6 +1,8 @@
 # cephify
 Simplified Ceph Deployment
 
+Minimum setup: 3 monitor nodes, 3 manager nodes, 3 OSD nodes
+
 # Prerequisite
 ## Setup node01 [master] as root
   - Create .ssh/config
