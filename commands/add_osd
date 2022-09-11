@@ -54,5 +54,6 @@ ssh $1 "blkid $disk_loc'1'"
 
 ssh $1 "ceph-volume lvm create --data $disk_loc'1'"
 
+sleep 5
 ssh $1 "ceph -s"
-ssh $1 "$1 osd added to $cluster_name"
+echo "$1 osd added to $cluster_name"
