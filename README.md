@@ -17,4 +17,4 @@ Host node02
 ```
 
 # Usage
-cephify <command> <node>
+cephify *command* *node*
