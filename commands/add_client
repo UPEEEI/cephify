@@ -1,6 +1,6 @@
 #/bin/bash
 echo "add_client"
-echo "Do you want to create a Ceph client on $1? Make sure a cluster already exists"
+echo "Do you want to create a Ceph client on $1? Make sure a cluster, pool and block already exist"
 select yn in "Yes" "No"; do
     case $yn in
         Yes ) break;;
