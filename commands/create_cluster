@@ -121,11 +121,11 @@ sleep 1
 ssh $1 "ceph dashboard ac-user-create admin -i password.txt administrator"
 
 echo "Create self-signed certificate..."
-sleep 1
+sleep 2
 ssh $1 "ceph dashboard create-self-signed-cert"
 
 echo "Confirm dashboard services"
-sleep 1
+sleep 5
 ssh $1 "ceph mgr services"
 
 
