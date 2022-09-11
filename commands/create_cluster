@@ -106,22 +106,24 @@ ssh $1 "systemctl enable ceph-mgr@$NODENAME"
 ssh $1 "systemctl start ceph-mgr@$NODENAME"
 
 ssh $1 "ceph config set mon auth_allow_insecure_global_id_reclaim false"
-
+sleep 1
 ssh $1 "ceph -s"
+sleep 1
 
 echo "Enabling dashboard module..."
 sleep 1
 ssh $1 "apt -y install ceph-mgr-dashboard"
 ssh $1 "ceph mgr module enable dashboard --force"
 ssh $1 "ceph mgr module ls | grep -A 5 enabled_modules"
+sleep 5
 
 ssh $1 "echo admin123 > password.txt"
 echo "Creating a user for Dashboard...user:admin, password: admin123"
-sleep 1
+sleep 5
 ssh $1 "ceph dashboard ac-user-create admin -i password.txt administrator"
 
 echo "Create self-signed certificate..."
-sleep 2
+sleep 5
 ssh $1 "ceph dashboard create-self-signed-cert"
 
 echo "Confirm dashboard services"
