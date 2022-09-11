@@ -18,10 +18,8 @@ Host node02
   Port 22
 ```
 
- - Permit root SSH login in `/etc/ssh/sshd`
- - Generate public/private rsa key pair on root using `ssh-keygen`
- - Set root password
- - Copy public rsa to all nodes using `ssh-copy-id` 
+ - Generate public/private rsa key pair on root using `ssh-keygen` on node01-master
+ - Copy public rsa key to all nodes manually(recommended) or by using `ssh-copy-id`(might need to enable `PermitRootLogin` in `/etc/ssh/sshd_config` and root password) 
 
 # Usage
 cephify *command* *node*
