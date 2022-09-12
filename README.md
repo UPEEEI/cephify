@@ -1,7 +1,7 @@
 # cephify
 Simplified Ceph Deployment
 
-Minimum setup: 3 monitor nodes, 3 manager nodes, 3 OSD nodes (at least *2* parent OSD to prevent degraded pgs)
+Minimum setup: 3 monitor nodes, 3 manager nodes, 3 OSD nodes (at least *2* parent OSD to enable pool creation)
 
 # Prerequisite
 ## Setup node01 [master] as root
