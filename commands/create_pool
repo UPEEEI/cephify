@@ -11,9 +11,9 @@ done
 conf_loc=$(find /etc/ceph/ -type f -name "*conf")
 cluster_name=$(basename -a -s ".conf" $conf_loc)
 
-#read -p "Enter Pool name [no space]: " pool_name
+read -p "Enter Pool name [no space]: " pool_name
 
-pool_name="rbd"
+#pool_name="rbd"
 
 echo "Creating RBD pool..."
 sleep 1
