@@ -46,7 +46,7 @@ echo "Creating mount location, if it does not exists..."
 sleep 1
 ssh $1 "mkdir -p $mount"
 
-NODEIP=$(ssh -G $1 | awk '/^hostname /' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
+NODEIP=$((ssh $1 "grep '^mon host' $conf_loc") | awk {'print $NF'} | sed 's/,.*//')
 echo "Mounting filesystem..."
 sleep 1
 ssh $1 "umount -l $mount"
