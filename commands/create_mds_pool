@@ -20,15 +20,15 @@ read -p "Enter Pool name [no space]: " POOL
 
 echo "Creating $POOL data pool..."
 sleep 1
-ssh $1 "ceph osd pool create $POOL_data_00 64"
+ssh $1 "ceph osd pool create $POOL-data-00 64"
 
 echo "Creating $POOL metadata pool..."
 sleep 1
-ssh $1 "ceph osd pool create $POOL_metadata 64"
+ssh $1 "ceph osd pool create $POOL-metadata 64"
 
 echo "Creating filesystem..."
 sleep 1
-ssh $1 "ceph fs new $POOL $POOL_metadata $POOL_data_00"
+ssh $1 "ceph fs new cephfs $POOL-metadata $POOL-data-00"
 
 echo "Checking cephfs..."
 sleep 1
@@ -44,7 +44,7 @@ ssh $1 "ceph fs status $POOL"
 echo " "
 
 sleep 1
-echo "Check size of $POOL_data. If the size is not enough, you can add another pool."
+echo "Check size of $POOL-data. If the size is not enough, you can add another pool."
 sleep 1
 echo "Yes to add another pool"
 echo "No to exit. You can manually add pool by manually creating and adding to the filesystem"
@@ -57,13 +57,13 @@ done
 
 echo "Creating another $POOL data pool..."
 sleep 1
-ssh $1 "ceph osd pool create $POOL_data_01 64"
+ssh $1 "ceph osd pool create $POOL-data-01 64"
 
 echo "Adding pool to the filesystem..."
 sleep 1
-ssh $1 "ceph fs add_data_pool $POOL $POOL_data_01"
+ssh $1 "ceph fs add_data_pool cephfs $POOL-data-01"
 
 echo " "
 echo "Checking cephfs status..."
 sleep 1
-ssh $1 "ceph fs status $POOL"
+ssh $1 "ceph fs status cephfs"
