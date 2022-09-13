@@ -40,7 +40,7 @@ ssh $1 "ceph mds stat"
 
 echo "Checking cephfs status..."
 sleep 1
-ssh $1 "ceph fs status $POOL"
+ssh $1 "ceph fs status cephfs"
 echo " "
 
 sleep 1
