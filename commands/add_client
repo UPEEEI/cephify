@@ -13,7 +13,7 @@ cluster_name=$(basename -a -s ".conf" $conf_loc)
 
 echo "Installing Ceph on $1..."
 sleep 1
-#ssh $1 "apt update; apt -y install ceph"
+ssh $1 "apt update; apt -y install ceph"
 
 echo "Transferring required files..."
 sleep 1
