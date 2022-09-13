@@ -58,7 +58,7 @@ ssh $1 "df -hT"
 
 echo "Mapping corresponding /etc/fstab entries..."
 sleep 1
-ssh $1 "$NODEIP:/ $mount ceph name=admin,secretfile=admin.key,noatime,_netdev 0 0" >> /etc/fstab"
+ssh $1 "echo "$NODEIP:/ $mount ceph name=admin,secretfile=admin.key,noatime,_netdev 0 0" >> /etc/fstab"
 
 echo "Adding cron entry..."
 ssh $1 "echo "@reboot root mount $mount" >> /etc/crontab"
