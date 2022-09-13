@@ -1,0 +1,41 @@
+#/bin/bash
+echo "create_mds_pool"
+echo "This will create 2 RADOS pools for Data and Metadata on MDS node. This should only be run once. If you want to delete existing data and metadata pool, run destroy_mds_pool"
+sleep 2
+
+echo "Checking if existing fs metadata pool exists..."
+sleep 1
+ssh $1 "ceph fs ls"
+sleep 1
+
+echo "Do you want to create a Ceph data and metadata pool on $1? Make sure a cluster already exists"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+echo "Creating cephfs_data pool..."
+sleep 1
+ssh $1 "ceph osd pool create cephfs_data 64"
+
+echo "Creating cephfs_metadata pool..."
+sleep 1
+ssh $1 "ceph osd pool create cephfs_metadata 64"
+
+echo "Creating cephfs..."
+sleep 1
+ssh $1 "ceph fs new cephfs cephfs_metadata cephfs_data"
+
+echo "Checking cephfs..."
+sleep 1
+ssh $1 "ceph fs ls"
+
+echo "Checking metadata node status..."
+sleep 1
+ssh $1 "ceph mds stat"
+
+echo "Checking cephfs status..."
+sleep 1
+ssh $1 "ceph fs status cephfs"
