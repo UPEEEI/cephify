@@ -1,0 +1,35 @@
+#/bin/bash
+echo "add_mds"
+echo "Do you want to create a Ceph metadata daemon on $1? Make sure a cluster already exists"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+conf_loc=$(find /etc/ceph/ -type f -name "*conf")
+cluster_name=$(basename -a -s ".conf" $conf_loc)
+
+echo "Installing Ceph on $1..."
+sleep 1
+ssh $1 "apt update; apt -y install ceph"
+
+echo "Transferring required files..."
+scp /etc/ceph/$cluster_name.conf $1:/etc/ceph/$cluster_name.conf
+scp /etc/ceph/$cluster_name.client.admin.keyring $1:/etc/ceph
+
+ssh $1 "systemctl stop ceph-mds@*"
+ssh $1 "rm -rf /var/lib/ceph/mds/$cluster_name-$1"
+ssh $1 "mkdir /var/lib/ceph/mds/$cluster_name-$1"
+
+echo "Creating authentication of mds daemon..."
+sleep 1
+
+ssh $1 "ceph-authtool --create-keyring /var/lib/ceph/mds/$cluster_name-$1/keyring --gen-key -n mds.$1"
+ssh $1 "chown -R ceph. /var/lib/ceph/mds/$cluster_name-$1"
+ssh $1 "ceph auth add mds.$1 osd 'allow rwx' mds 'allow' mon 'allow profile mds' -i /var/lib/ceph/mds/$cluster_name-$1/keyring"
+
+echo "Starting service..."
+sleep 1
+ssh $1 "systemctl enable --now ceph-mds@$1"
