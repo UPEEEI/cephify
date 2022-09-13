@@ -35,8 +35,8 @@ done
 echo "Base64 encoding client key..."
 sleep 1
 ssh $1 "rm -rf admin.key"
-ssh $1 "ceph-authtool -p /etc/ceph/ceph.client.admin.keyring > admin.key"
-ssh $1 "chmod 600 admin.key"
+ssh $1 "ceph-authtool -p /etc/ceph/ceph.client.admin.keyring > /etc/ceph/admin.key"
+ssh $1 "chmod 600 /etc/ceph/admin.key"
 echo "admin.key generated"
 sleep 2
 
@@ -46,12 +46,12 @@ echo "Creating mount location, if it does not exists..."
 sleep 1
 ssh $1 "mkdir -p $mount"
 
-NODEIP=$(grep "^mon host" /etc/ceph/ceph.conf | awk {'print $NF'})
+NODEIP=$(ssh -G $1 | awk '/^hostname /' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
 echo "Mounting filesystem..."
 sleep 1
 ssh $1 "umount -l $mount"
 sleep 1
-ssh $1 "mount -t ceph $NODEIP:6789:/ $mount -o name=admin,secretfile=admin.key"
+ssh $1 "mount -t ceph $NODEIP:6789:/ $mount -o name=admin,secretfile=/etc/ceph/admin.key"
 
 ssh $1 "df -hT"
 
