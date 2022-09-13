@@ -41,6 +41,10 @@ ssh $1 "rbd ls -l $pool_name"
 
 read -p "Enter block you want to use [ex. student]: " block_name
 
+echo "Unmapping any existing block devices..."
+sleep 1
+ssh $1 "rbd unmap $pool_name/$block_name"
+
 echo "Mapping the block device..."
 sleep 1
 ssh $1 "rbd map $pool_name/$block_name"
