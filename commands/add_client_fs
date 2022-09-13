@@ -46,7 +46,8 @@ echo "Creating mount location, if it does not exists..."
 sleep 1
 ssh $1 "mkdir -p $mount"
 
-NODEIP=$((ssh $1 "grep '^mon host' $conf_loc") | awk {'print $NF'} | sed 's/,.*//')
+#NODEIP=$((ssh $1 "grep '^mon host' $conf_loc") | awk {'print $NF'} | sed 's/,.*//')
+NODEIP=$((ssh $1 "grep '^mon host' $conf_loc") | awk {'print $NF'})
 echo "Mounting filesystem..."
 sleep 1
 ssh $1 "umount -l $mount"
@@ -57,4 +58,8 @@ ssh $1 "df -hT"
 
 echo "Mapping corresponding /etc/fstab entries..."
 sleep 1
-ssh $1 "echo "cephuser@.cephfs=/     $mount    ceph    mon_addr=$NODEIP:6789,noatime,_netdev    0       0" >> /etc/fstab"
+ssh $1 "$NODEIP:/ $mount ceph name=admin,secretfile=admin.key,noatime,_netdev 0 0" >> /etc/fstab"
+
+echo "Adding cron entry..."
+ssh $1 "echo "@reboot root mount $mount" >> /etc/crontab"
+
