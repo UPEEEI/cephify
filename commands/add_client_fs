@@ -52,8 +52,9 @@ sleep 1
 ssh $1 "umount -l $mount"
 sleep 1
 ssh $1 "mount -t ceph $NODEIP:6789:/ $mount -o name=admin,secretfile=admin.key"
-sleep 1
 
-echo "Mount successful"
-sleep 1
 ssh $1 "df -hT"
+
+echo "Mapping corresponding /etc/fstab entries..."
+sleep 1
+ssh $1 "echo "cephuser@.cephfs=/     $mount    ceph    mon_addr=$NODEIP:6789,noatime,_netdev    0       0" >> /etc/fstab"
