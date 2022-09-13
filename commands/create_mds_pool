@@ -1,6 +1,6 @@
 #/bin/bash
 echo "create_mds_pool"
-echo "This will create 2 RADOS pools for Data and Metadata on MDS node. This should only be run once. If you want to delete existing data and metadata pool, run destroy_mds_pool"
+echo "This will create RADOS pools for Data and Metadata on MDS node. This should only be run once. If you want to delete existing data and metadata pool, run destroy_mds_pool"
 sleep 2
 
 echo "Checking if existing fs metadata pool exists..."
@@ -16,17 +16,19 @@ select yn in "Yes" "No"; do
     esac
 done
 
-echo "Creating cephfs_data pool..."
-sleep 1
-ssh $1 "ceph osd pool create cephfs_data 64"
+read -p "Enter Pool name [no space]: " POOL
 
-echo "Creating cephfs_metadata pool..."
+echo "Creating $POOL data pool..."
 sleep 1
-ssh $1 "ceph osd pool create cephfs_metadata 64"
+ssh $1 "ceph osd pool create $POOL_data_00 64"
 
-echo "Creating cephfs..."
+echo "Creating $POOL metadata pool..."
 sleep 1
-ssh $1 "ceph fs new cephfs cephfs_metadata cephfs_data"
+ssh $1 "ceph osd pool create $POOL_metadata 64"
+
+echo "Creating filesystem..."
+sleep 1
+ssh $1 "ceph fs new $POOL $POOL_metadata $POOL_data_00"
 
 echo "Checking cephfs..."
 sleep 1
@@ -38,4 +40,30 @@ ssh $1 "ceph mds stat"
 
 echo "Checking cephfs status..."
 sleep 1
-ssh $1 "ceph fs status cephfs"
+ssh $1 "ceph fs status $POOL"
+echo " "
+
+sleep 1
+echo "Check size of $POOL_data. If the size is not enough, you can add another pool."
+sleep 1
+echo "Yes to add another pool"
+echo "No to exit. You can manually add pool by manually creating and adding to the filesystem"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+echo "Creating another $POOL data pool..."
+sleep 1
+ssh $1 "ceph osd pool create $POOL_data_01 64"
+
+echo "Adding pool to the filesystem..."
+sleep 1
+ssh $1 "ceph fs add_data_pool $POOL $POOL_data_01"
+
+echo " "
+echo "Checking cephfs status..."
+sleep 1
+ssh $1 "ceph fs status $POOL"
