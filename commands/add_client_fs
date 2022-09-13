@@ -1,0 +1,59 @@
+#/bin/bash
+echo "add_client_fs"
+echo "Do you want to create a Ceph client on $1? Make sure a cluster, pool and block already exist"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+conf_loc=$(find /etc/ceph/ -type f -name "*conf")
+cluster_name=$(basename -a -s ".conf" $conf_loc)
+
+echo "Installing Ceph-fuse on $1..."
+sleep 1
+ssh $1 "apt update; apt -y install ceph-common ceph-fuse"
+
+echo "Transferring required files..."
+sleep 1
+
+scp /etc/ceph/$cluster_name.conf $1:/etc/ceph/$cluster_name.conf
+scp /etc/ceph/$cluster_name.client.admin.keyring $1:/etc/ceph
+ssh $1 "chown ceph. /etc/ceph/ceph.*"
+
+echo "Ceph client added on $1"
+sleep 1
+echo "Do you want to mount CephFS (filesystem) on $1? Requires pools, mds and mds pools."
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+echo "Base64 encoding client key..."
+sleep 1
+ssh $1 "rm -rf admin.key"
+ssh $1 "ceph-authtool -p /etc/ceph/ceph.client.admin.keyring > admin.key"
+ssh $1 "chmod 600 admin.key"
+echo "admin.key generated"
+sleep 2
+
+read -p "Enter location you want to mount [ex. /mnt]: " mount
+
+echo "Creating mount location, if it does not exists..."
+sleep 1
+ssh $1 "mkdir -p $mount"
+
+NODEIP=$(grep "^mon host" /etc/ceph/ceph.conf | awk {'print $NF'})
+echo "Mounting filesystem..."
+sleep 1
+ssh $1 "umount -l $mount"
+sleep 1
+ssh $1 "mount -t ceph $NODEIP:6789:/ $mount -o name=admin,secretfile=admin.key"
+sleep 1
+
+echo "Mount successful"
+sleep 1
+ssh $1 "df -hT"
