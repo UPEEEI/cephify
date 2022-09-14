@@ -11,9 +11,9 @@ done
 conf_loc=$(find /etc/ceph/ -type f -name "*conf")
 cluster_name=$(basename -a -s ".conf" $conf_loc)
 
-echo "Installing Ceph-fuse on $1..."
+echo "Installing Ceph-common on $1..."
 sleep 1
-ssh $1 "apt update; apt -y install ceph-common ceph-fuse"
+ssh $1 "apt update; apt -y install ceph-common; apt -y autoremove"
 
 echo "Transferring required files..."
 sleep 1
@@ -40,6 +40,14 @@ ssh $1 "chmod 600 admin.key"
 echo "admin.key generated"
 sleep 2
 
+echo "Checking ceph fs..."
+sleep 1
+ssh $1 "ceph fs ls"
+
+read -p "Enter filesystem name you want to mount [no space]: " VOLUME
+
+sleep 1
+
 read -p "Enter location you want to mount [ex. /mnt]: " mount
 
 echo "Creating mount location, if it does not exists..."
@@ -52,13 +60,13 @@ echo "Mounting filesystem..."
 sleep 1
 ssh $1 "umount -l $mount"
 sleep 1
-ssh $1 "mount -t ceph $NODEIP:6789:/ $mount -o name=admin,secretfile=admin.key"
+ssh $1 "mount -t ceph $NODEIP:6789:/ $mount -o mds_namespace=$VOLUME,name=admin,secretfile=admin.key"
 
 ssh $1 "df -hT"
 
 echo "Mapping corresponding /etc/fstab entries..."
 sleep 1
-ssh $1 "echo "$NODEIP:/ $mount ceph name=admin,secretfile=admin.key,noatime,_netdev 0 0" >> /etc/fstab"
+ssh $1 "echo "$NODEIP:/ $mount ceph mds_namespace=$VOLUME,name=admin,secretfile=admin.key,noatime,_netdev 0 0" >> /etc/fstab"
 
 echo "Adding cron entry..."
 ssh $1 "echo "@reboot root mount $mount" >> /etc/crontab"

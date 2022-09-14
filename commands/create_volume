@@ -1,0 +1,34 @@
+#/bin/bash
+echo "create_volume"
+echo "This will create RADOS pools for Data and Metadata on MDS node using ceph fs volume. If you want to delete existing data and metadata pool, run destroy_volume"
+sleep 1
+echo "Do you want to create a Ceph data and metadata pool on $1? Make sure a cluster already exists"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+echo "Enabling multiple filesystems creation"
+sleep 1
+ssh $1 "ceph fs flag set enable_multiple true --yes-i-really-mean-it"
+
+read -p "Enter volume name [no space]: " VOLUME
+
+echo "Creating volume $VOLUME..."
+sleep 1
+ssh $1 "ceph fs volume create $VOLUME"
+
+echo "Checking cephfs..."
+sleep 1
+ssh $1 "ceph fs ls"
+
+echo "Checking metadata node status..."
+sleep 1
+ssh $1 "ceph mds stat"
+
+echo "Checking cephfs status..."
+sleep 3
+ssh $1 "ceph fs status $VOLUME"
+
