@@ -1,0 +1,84 @@
+#/bin/bash
+echo "create_mds_pool"
+echo "This will create RADOS pools for Data and Metadata on MDS node. This should only be run once. If you want to delete existing data and metadata pool, run destroy_mds_pool"
+sleep 2
+
+echo "Checking if existing fs metadata pool exists..."
+sleep 1
+ssh $1 "ceph fs ls"
+sleep 1
+
+echo "Do you want to create a Ceph data and metadata pool on $1? Make sure a cluster already exists"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+
+echo "Enabling multiple filesystems creation"
+sleep 1
+ssh $1 "ceph fs flag set enable_multiple true --yes-i-really-mean-it"
+
+read -p "Enter volume name [no space]: " VOLUME
+
+echo "Creating volume $VOLUME..."
+sleep 1
+
+
+
+#read -p "Enter Pool name [no space]: " POOL
+
+echo "Creating $VOLUME data pool..."
+sleep 1
+ssh $1 "ceph osd pool create cephfs.$VOLUME.data erasure 64 --erasure-code-profile=default"
+
+echo "Creating $VOLUME metadata pool..."
+sleep 1
+ssh $1 "ceph osd pool create cephfs.$VOLUME.meta 64"
+
+echo "Enabling overwrites for $VOLUME data pool only (metadata not allowed for erasure)..."
+sleep 1
+ssh $1 "ceph osd pool set cephfs.$VOLUME.data allow_ec_overwrites true"
+
+echo "Creating filesystem..."
+sleep 1
+ssh $1 "ceph fs new --force $VOLUME cephfs.$VOLUME.meta cephfs.$VOLUME.data"
+
+echo "Checking cephfs..."
+sleep 1
+ssh $1 "ceph fs ls"
+
+echo "Checking metadata node status..."
+sleep 1
+ssh $1 "ceph mds stat"
+
+echo "Checking cephfs status..."
+sleep 1
+ssh $1 "ceph fs status $VOLUME"
+echo " "
+
+#sleep 1
+#echo "Check size of $POOL-data. If the size is not enough, you can add another pool."
+#sleep 1
+#echo "Yes to add another pool"
+#echo "No to exit. You can manually add pool by manually creating and adding to the filesystem"
+#select yn in "Yes" "No"; do
+#    case $yn in
+#        Yes ) break;;
+#        No ) exit;;
+#    esac
+#done
+
+#echo "Creating another $POOL data pool..."
+#sleep 1
+#ssh $1 "ceph osd pool create $POOL-data-01 64"
+
+#echo "Adding pool to the filesystem..."
+#sleep 1
+#ssh $1 "ceph fs add_data_pool cephfs $POOL-data-01"
+
+#echo " "
+#echo "Checking cephfs status..."
+#sleep 1
+#ssh $1 "ceph fs status cephfs"

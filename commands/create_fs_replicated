@@ -32,3 +32,18 @@ echo "Checking cephfs status..."
 sleep 3
 ssh $1 "ceph fs status $VOLUME"
 
+echo "Set replication size and min_size for I/O:"
+sleep 1
+read -p "Enter replication size [3 - default(two extra copies), 2 - (one extra copy) ]: " REPL_SIZE
+read -p "Enter min_size for I/O to start running [recommended value > 1]: " MIN_SIZE
+
+echo "Setting parameters..."
+sleep 1
+ssh $1 "ceph osd pool set cephfs.$VOLUME.data size $REPL_SIZE"
+ssh $1 "ceph osd pool set cephfs.$VOLUME.data min_size $MIN_SIZE"
+ssh $1 "ceph osd pool set cephfs.$VOLUME.meta size $REPL_SIZE"
+ssh $1 "ceph osd pool set cephfs.$VOLUME.meta min_size $MIN_SIZE"
+
+ssh $1 "ceph osd dump | grep 'replicated size'"
+
+
